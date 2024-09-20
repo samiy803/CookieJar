@@ -23,7 +23,7 @@ app.use(express.json())
 
 app.post("/add-cookie", (req: Request, res: Response) => {
     console.log("[server]: Received request to add cookie");
-    const { cookies } = req.body;
+    const cookies = req.body;
     if (!cookies || !Array.isArray(cookies)) {
         return res.status(400).json({ message: "Invalid input" });
     }
