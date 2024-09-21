@@ -1,4 +1,8 @@
 import puppeteer, { Browser, Page, TimeoutError } from "puppeteer";
+import { client } from "./mongodb";
+import { ObjectId } from "mongodb";
+
+export const DESIRED_COOKIES = process.env.COOKIE_FILTER?.split(",") || [];
 
 interface Cookie {
     name: string;
@@ -24,7 +28,7 @@ export async function startPuppeteer(cookies: Cookies, endpoint?: string) {
         throw new Error("No endpoint provided");
     }
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: process.env.NODE_ENV === "production",
         defaultViewport: null,
         args: ["--start-maximized"],
     });
@@ -55,9 +59,30 @@ export async function stopPuppeteer(browser: Browser) {
     await browser.close();
 }
 
-export async function pulse(page: Page) {
+export async function pulse(page: Page, doc_id: ObjectId) {
     // Refresh the page. This will keep the session alive
     await page.reload();
+    const new_cookies = await page.cookies();
+    console.log("[puppeteer]: Pulled new cookies");
+    const desiredCookies = new_cookies.filter((cookie) => {
+        return DESIRED_COOKIES.includes(cookie.name);
+    });
+    console.log(`[puppeteer]: Found ${desiredCookies.length} desired cookies`);
+    if (desiredCookies.length !== DESIRED_COOKIES.length) {
+        console.error("[puppeteer]: Did not find all desired cookies. Exiting...");
+        return;
+    }
+    console.log("[puppeteer]: Found all desired cookies");
+    const document = desiredCookies.reduce((acc, cookie) => {
+        acc[cookie.name] = cookie;
+        acc["lastUpdated"] = Date.now();
+        return acc;
+    }, {} as { [key: string]: Cookie | number | null });
+    console.log("[puppeteer]: Updating cookie in database");
+    const db = client.db("prod");
+    const collection = db.collection("cookies");
+    collection.updateOne({ _id: doc_id }, { $set: document });
+    console.log("[puppeteer]: Updated cookie in database");
     try {
         await page.waitForNavigation();
     } catch (e) {

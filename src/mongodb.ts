@@ -1,7 +1,7 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 
-export const getClient = (uri: string | undefined) => {
+const getClient = (uri: string | undefined) => {
     if (!uri) {
         throw new Error("MongoDB URI is not defined");
     }
@@ -10,3 +10,5 @@ export const getClient = (uri: string | undefined) => {
       });
       return client;
 }
+
+export const client = getClient(process.env.MONGODB_URI);

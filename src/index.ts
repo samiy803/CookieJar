@@ -1,16 +1,14 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
-import { getClient } from "./mongodb";
-import { Cookies, pulse, startPuppeteer } from "./puppeteer";
-import { ToadScheduler, SimpleIntervalJob, Task } from 'toad-scheduler';
-
 dotenv.config();
+
+import { client } from "./mongodb";
+import { Cookies, pulse, startPuppeteer, DESIRED_COOKIES } from "./puppeteer";
+import { ToadScheduler, SimpleIntervalJob, Task } from 'toad-scheduler';
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
-const client = getClient(process.env.MONGODB_URI);
 
-const DESIRED_COOKIES = process.env.COOKIE_FILTER?.split(",");
 if (!DESIRED_COOKIES) {
     console.error("[server]: No desired cookies found. Exiting...");
     process.exit(1);
@@ -59,7 +57,7 @@ app.post("/add-cookie", (req: Request, res: Response) => {
             return;
         }
         console.log("[scheduler]: Pulsing session");
-        await pulse(session.page);
+        await pulse(session.page, document._id);
     });
     const job = new SimpleIntervalJob({ seconds: 300, runImmediately: true }, task);
     app.locals.scheduler.addSimpleIntervalJob(job);
@@ -107,7 +105,7 @@ app.listen(port, async () => {
                 return;
             }
             console.log("[scheduler]: Pulsing session");
-            await pulse(session.page);
+            await pulse(session.page, document._id);
         });
         const job = new SimpleIntervalJob({ seconds: 300, runImmediately: true }, task);
         setTimeout(() => {
