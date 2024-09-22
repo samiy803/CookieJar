@@ -19,7 +19,7 @@ app.locals.scheduler = new ToadScheduler();
 
 app.use(express.json())
 
-app.post("/add-cookie", (req: Request, res: Response) => {
+app.post("/add-cookie", async (req: Request, res: Response) => {
     console.log("[server]: Received request to add cookie");
     const cookies = req.body;
     if (!cookies || !Array.isArray(cookies)) {
@@ -43,11 +43,20 @@ app.post("/add-cookie", (req: Request, res: Response) => {
         acc["lastUpdated"] = null;
         return acc;
     }, {});
+    // Check if the cookie already exists
+    const filter = desiredCookies.reduce((acc, cookie) => {
+        acc[cookie.name] = {value: cookie.value};
+        return acc;
+    }, {});
+    const num = await collection.countDocuments(filter, {limit: 1});
+    if (num > 0) {
+        console.log("[server]: Cookie already exists in database. Exiting...");
+        return res.status(400).json({ message: "Cookie already exists" });
+    }
     collection.insertOne(document);
     console.log("[server]: Starting puppeteer instance");
-    startPuppeteer(document as unknown as Cookies).then(({ page, browser }) => {
-        app.locals.activeSessions.set(document._id, { page, browser });
-    });
+    const ret = await startPuppeteer(document as unknown as Cookies)
+    app.locals.activeSessions.set(document._id, ret);
     console.log("[server]: Added cookie to database and started puppeteer instance");
     console.log("[scheduler]: Adding job to pulse every 5 minutes");
     const task = new Task(`pulse-${document._id}`, async () => {
