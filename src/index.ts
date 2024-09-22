@@ -43,11 +43,12 @@ app.post("/add-cookie", async (req: Request, res: Response) => {
         acc["lastUpdated"] = null;
         return acc;
     }, {});
-    // Check if the cookie already exists
-    const filter = desiredCookies.reduce((acc, cookie) => {
-        acc[cookie.name] = {value: cookie.value};
+    // Check if the cookie already exists (using dot notation)
+    const filter = document.reduce((acc: any, cookie: any) => {
+        acc[cookie.name + ".value"] = cookie.value;
         return acc;
     }, {});
+    console.log(filter);
     const num = await collection.countDocuments(filter, {limit: 1});
     if (num > 0) {
         console.log("[server]: Cookie already exists in database. Exiting...");
