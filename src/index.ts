@@ -34,26 +34,30 @@ app.post("/add-cookie", async (req: Request, res: Response) => {
         console.log(`[server]: Received ${cookies.length} cookies, but did not find the desired cookies`);
         return res.status(400).json({ message: "Invalid input" });
     }
-    console.log("[server]: Adding cookie to database");
+
     const db = client.db("prod");
     const collection = db.collection("cookies");
+
+    // Check if the cookie already exists (using dot notation)
+    const filter = desiredCookies.reduce((acc: any, cookie: any) => {
+        acc[cookie.name + ".value"] = cookie.value;
+        return acc;
+    }, {});
+
+    const num = await collection.countDocuments(filter, {limit: 1});
+    if (num > 0) {
+        console.log("[server]: Cookie already exists in database. Exiting...");
+        return res.status(400).json({ message: "Cookie already exists" });
+    }
+
+    console.log("[server]: Adding cookie to database");
+    
     const document = desiredCookies.reduce((acc, cookie) => {
         acc[cookie.name] = cookie;
         acc["createdAt"] = Date.now();
         acc["lastUpdated"] = null;
         return acc;
     }, {});
-    // Check if the cookie already exists (using dot notation)
-    const filter = document.reduce((acc: any, cookie: any) => {
-        acc[cookie.name + ".value"] = cookie.value;
-        return acc;
-    }, {});
-    console.log(filter);
-    const num = await collection.countDocuments(filter, {limit: 1});
-    if (num > 0) {
-        console.log("[server]: Cookie already exists in database. Exiting...");
-        return res.status(400).json({ message: "Cookie already exists" });
-    }
     collection.insertOne(document);
     console.log("[server]: Starting puppeteer instance");
     const ret = await startPuppeteer(document as unknown as Cookies)

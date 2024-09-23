@@ -68,6 +68,7 @@ export async function pulse(page: Page, doc_id: ObjectId) {
         return DESIRED_COOKIES.includes(cookie.name);
     });
     console.log(`[puppeteer]: Found ${desiredCookies.length} desired cookies`);
+    console.log(`[puppeteer]: Desired cookies: ${desiredCookies.map((cookie) => cookie.name).join(", ")}`);
     if (desiredCookies.length !== DESIRED_COOKIES.length) {
         console.error("[puppeteer]: Did not find all desired cookies. Exiting...");
         return;
