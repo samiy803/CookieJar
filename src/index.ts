@@ -17,7 +17,7 @@ if (!DESIRED_COOKIES) {
 app.locals.activeSessions = new Map();
 app.locals.scheduler = new ToadScheduler();
 
-app.use(express.json())
+app.use(express.json({limit: '5000mb'}))
 
 app.post("/add-cookie", async (req: Request, res: Response) => {
     console.log("[server]: Received request to add cookie");
